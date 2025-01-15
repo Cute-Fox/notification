@@ -1,4 +1,7 @@
 import sqlite3
+import time
+import threading
+from datetime import datetime
 from color_text import *
 import config
 import os
@@ -150,8 +153,49 @@ def get_task_by_id(task_id):
 
     return task
 
+def check_notifications():
+    notifications = []
+    try:
+        conn = sqlite3.connect(config.db_path)
+        cursor = conn.cursor()
 
+        cursor.execute('SELECT * FROM tasks')
+        tasks = cursor.fetchall()
 
+        current_time = datetime.now()
+
+        for task in tasks:
+            task_time_str = task[5]  # Время задачи (6-й элемент)
+            task_time = datetime.strptime(task_time_str, '%Y-%m-%d %H:%M')
+
+            # Проверяем, настало ли время для уведомлений (сравниваем с текущим временем)
+            if task_time <= current_time:
+                user_id = task[0]  # user_id (первый элемент)
+                in_15 = task[6]  # В 15 минут
+                in_30 = task[7]  # В 30 минут
+                in_hour = task[8]  # В час
+                in_day = task[9]  # В день
+                in_week = task[10]  # В неделю
+
+                # Формируем уведомление
+                if in_15:
+                    notifications.append((user_id, f"15 минут перед: {task[2]} - {task[3]}"))
+                if in_30:
+                    notifications.append((user_id, f"30 минут перед: {task[2]} - {task[3]}"))
+                if in_hour:
+                    notifications.append((user_id, f"1 час перед: {task[2]} - {task[3]}"))
+                if in_day:
+                    notifications.append((user_id, f"1 день перед: {task[2]} - {task[3]}"))
+                if in_week:
+                    notifications.append((user_id, f"1 неделя перед: {task[2]} - {task[3]}"))
+
+        conn.close()
+
+    except sqlite3.Error as e:
+        print(f'Ошибка при получении задач из базы данных: {e}')
+
+    return notifications
+    
 if __name__ == "__main__":
     init_db()
     print(get_task_by_id('1011269'))

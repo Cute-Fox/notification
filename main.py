@@ -1,9 +1,12 @@
 import telebot
+import config
+import database
+import threading
+import time
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # Ваш токен от BotFather
-TOKEN = "7858668499:AAEMcrJsMqKwvpLzs86SN80bJIRgUSl7w5A"
-bot = telebot.TeleBot(TOKEN)
+bot = telebot.TeleBot(config.api_token)
 
 # Категории уведомлений
 categories = [
@@ -31,6 +34,32 @@ def category_menu(callback_prefix):
         markup.add(InlineKeyboardButton(category, callback_data=f"{callback_prefix}:{category}"))
     markup.add(InlineKeyboardButton("Назад в меню", callback_data="main_menu"))
     return markup
+
+# MONITORING 
+# Отправка уведомлений через Telegram
+def send_notifications_to_telegram(notifications):
+    for user_id, notification in notifications:
+        try:
+            bot.send_message(chat_id=user_id, text=notification)
+        except Exception as e:
+            print(f"Ошибка при отправке уведомления пользователю {user_id}: {e}")
+
+# Функция мониторинга уведомлений
+def monitor_notifications():
+    while True:
+        notifications = database.check_notifications()
+
+        if notifications:
+            send_notifications_to_telegram(notifications)
+
+        # Задержка 60 секунд (1 минута)
+        time.sleep(60)
+
+# Запуск мониторинга в потоке
+def start_monitoring():
+    notification_thread = threading.Thread(target=monitor_notifications)
+    notification_thread.daemon = True  # Поток завершится при завершении программы
+    notification_thread.start()
 
 # Обработчик команды /start
 @bot.message_handler(commands=["start"])
@@ -135,5 +164,10 @@ def save_reminder(message, category):
         reply_markup=main_menu()
     )
 
-# Запуск бота
-bot.polling()
+if __name__ == "__main__":
+    # Инициализируем базу данных
+    database.init_db()
+    # Запуск мониторинга
+    start_monitoring()
+    # Запуск бота
+    bot.polling(none_stop=False)
