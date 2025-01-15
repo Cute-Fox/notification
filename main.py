@@ -11,10 +11,10 @@ bot = telebot.TeleBot(config.api_token)
 # Категории уведомлений
 categories = [
     "Личное 🏠",
-    "Работа/Учеба 💼📚",
-    "Здоровье 🏋️‍♀️💊",
-    "Важные даты 📅🎉",
-    "Финансы 💰📈"
+    "Работа/Учеба 📚",
+    "Здоровье 💊",
+    "Важные даты 🎉",
+    "Финансы 💰"
 ]
 
 # Хранилище напоминаний
@@ -66,7 +66,7 @@ def start_monitoring():
 def start(message):
     bot.send_message(
         message.chat.id,
-        "Привет! Я бот для создания напоминаний. Вы можете управлять своими напоминаниями с помощью кнопок ниже.",
+        f"Привет! Я бот для создания напоминаний 🔔 \nВы можете управлять ими с помощью кнопок ниже ⬇️",
         reply_markup=main_menu()
     )
 
@@ -100,7 +100,7 @@ def callback_handler(call):
             ) or "Нет напоминаний в этой категории."
             markup = InlineKeyboardMarkup()
             for i, reminder in enumerate(reminders[category].get(user_id, [])):
-                markup.add(InlineKeyboardButton(f"Удалить {i+1}", callback_data=f"delete_reminder:{category}:{i}"))
+                markup.add(InlineKeyboardButton(f"🗑 Удалить {i+1}", callback_data=f"delete_reminder:{category}:{i}"))
             markup.add(InlineKeyboardButton("Назад в категории", callback_data="list_reminders"))
             markup.add(InlineKeyboardButton("Назад в меню", callback_data="main_menu"))
             bot.edit_message_text(
@@ -118,13 +118,13 @@ def callback_handler(call):
                 f"Напоминание удалено из категории '{category}'.",
                 chat_id=call.message.chat.id,
                 message_id=call.message.message_id,
-                reply_markup=main_menu()
+                reply_markup=category_menu("view_category")
             )
         except IndexError:
             bot.send_message(
                 call.message.chat.id,
                 "Ошибка: Напоминание не найдено.",
-                reply_markup=main_menu()
+                reply_markup=category_menu("view_category")
             )
     elif call.data == "create_reminder":
         bot.edit_message_text(
